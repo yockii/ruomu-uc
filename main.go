@@ -1,9 +1,9 @@
-package ruomu_uc
+package main
 
 import (
 	"encoding/json"
 
-	"github.com/hashicorp/go-plugin"
+	"github.com/yockii/ruomu-core/config"
 	"github.com/yockii/ruomu-core/shared"
 
 	"github.com/yockii/ruomu-uc/controller"
@@ -12,6 +12,9 @@ import (
 type UC struct{}
 
 func (UC) Initial(params map[string]string) error {
+	for key, value := range params {
+		config.Set(key, value)
+	}
 	return nil
 }
 
@@ -31,11 +34,5 @@ func (UC) InjectCall(code string, value []byte) ([]byte, error) {
 }
 
 func main() {
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: shared.Handshake,
-		Plugins: map[string]plugin.Plugin{
-			"uc": &shared.CommunicatePlugin{Impl: &UC{}},
-		},
-		GRPCServer: plugin.DefaultGRPCServer,
-	})
+	shared.ModuleServe(ModuleName, &UC{})
 }

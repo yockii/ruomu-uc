@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/sirupsen/logrus v1.9.0
-	github.com/yockii/ruomu-core v0.0.0-20221122094559-43b6f4b44c08
+	github.com/yockii/ruomu-core v0.0.0-20221123012554-afb30eda8622
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 )
 
