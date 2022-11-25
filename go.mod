@@ -2,6 +2,8 @@ module github.com/yockii/ruomu-uc
 
 go 1.19
 
+replace github.com/yockii/ruomu-core => E:\projects\github.com\yockii\ruomu-core
+
 require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/yockii/ruomu-core v0.0.0-20221123012554-afb30eda8622

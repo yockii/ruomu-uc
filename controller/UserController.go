@@ -16,7 +16,10 @@ var UserController = new(userController)
 
 type userController struct{}
 
-func (_ *userController) Add(value []byte) (instance *model.User, err error) {
+func (c *userController) Add(value []byte) (interface{}, error) {
+	return c.add(value)
+}
+func (_ *userController) add(value []byte) (instance *model.User, err error) {
 	instance = new(model.User)
 	if err = json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -48,6 +51,10 @@ func (_ *userController) Add(value []byte) (instance *model.User, err error) {
 		return instance, nil
 	}
 	return nil, errors.New("Unknown error ")
+}
+
+func (c *userController) GetUserAuthorizationInfo(value []byte) (any, error) {
+
 }
 
 //
