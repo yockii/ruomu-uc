@@ -10,9 +10,12 @@
 uc
 
 ## 模块注入点
-| 代码       | 注入类型      | 说明   |
-|----------|-----------|------|
-| user:add | HTTP-POST | 新增用户 |
+| 代码                        | 注入类型      | 说明         |
+|---------------------------|-----------|------------|
+| authorizationInfoByUserId | CODE      | 获取用户角色ID列表 |
+| authorizationInfoByRoleId | CODE      | 获取角色资源列表   |
+| user:add                  | HTTP-POST | 新增用户       |
+| user:login                | HTTP-POST | 用户登录       |
 
 
 

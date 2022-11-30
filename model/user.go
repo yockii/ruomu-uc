@@ -4,12 +4,12 @@ import "github.com/yockii/ruomu-core/database"
 
 type User struct {
 	Id           int64             `json:"id,omitempty" xorm:"pk"`
-	Username     string            `json:"username,omitempty" xorm:"varchar(30) index"`
-	Password     string            `json:"password,omitempty"`
-	RealName     string            `json:"realName,omitempty"`
-	ExternalId   string            `json:"externalId,omitempty" xorm:"varchar(50) index"`
-	ExternalType string            `json:"externalType,omitempty"`
-	Status       int               `json:"status,omitempty"`
+	Username     string            `json:"username,omitempty" xorm:"varchar(30) index comment('用户名')"`
+	Password     string            `json:"password,omitempty" xorm:"comment('密码')"`
+	RealName     string            `json:"realName,omitempty" xorm:"comment('真实姓名')"`
+	ExternalId   string            `json:"externalId,omitempty" xorm:"varchar(50) index comment('外部关联ID')"`
+	ExternalType string            `json:"externalType,omitempty" xorm:"comment('关联类型')"`
+	Status       int               `json:"status,omitempty" xorm:"comment('状态 1-正常')"`
 	CreateTime   database.DateTime `json:"createTime" xorm:"created"`
 }
 

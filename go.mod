@@ -5,7 +5,9 @@ go 1.19
 replace github.com/yockii/ruomu-core => E:\projects\github.com\yockii\ruomu-core
 
 require (
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/sirupsen/logrus v1.9.0
+	github.com/tidwall/gjson v1.14.4
 	github.com/yockii/ruomu-core v0.0.0-20221123012554-afb30eda8622
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 )
@@ -21,6 +23,7 @@ require (
 	github.com/gofiber/template v1.7.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/gomodule/redigo v1.8.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/go-hclog v1.2.0 // indirect
 	github.com/hashicorp/go-plugin v1.4.6 // indirect
@@ -47,6 +50,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rs/xid v1.2.1 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -54,6 +58,8 @@ require (
 	github.com/spf13/viper v1.14.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.40.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect

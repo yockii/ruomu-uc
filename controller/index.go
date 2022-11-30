@@ -12,10 +12,13 @@ func Dispatch(code string, headers map[string]string, value []byte) ([]byte, err
 	switch code {
 	// 代码注入点
 	case shared.InjectCodeAuthorizationInfoByUserId:
-		return wrapCall(value, UserController.GetUserAuthorizationInfo)
-
+		return wrapCall(value, UserController.GetUserRoleIds)
+	case shared.InjectCodeAuthorizationInfoByRoleId:
+		return wrapCall(value, RoleController.GetRoleResourceCodes)
 	// HTTP 注入点
-	case constant.CodeUserAdd:
+	case constant.InjectCodeUserLogin:
+		return wrapCall(value, UserController.Login)
+	case constant.InjectCodeUserAdd:
 		return wrapCall(value, UserController.Add)
 	}
 	return nil, nil
