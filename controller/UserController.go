@@ -160,6 +160,136 @@ func (c *userController) Login(value []byte) (any, error) {
 	}, nil
 }
 
+func (c *userController) Update(value []byte) (any, error) {
+	instance := new(model.User)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+
+	// 处理必填
+	if instance.Id == 0 {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamNotEnough,
+			Msg:  server.ResponseMsgParamNotEnough + " id",
+		}, nil
+	}
+
+	if _, err := database.DB.ID(instance.Id).Update(&model.User{
+		RealName:     instance.RealName,
+		ExternalId:   instance.ExternalId,
+		ExternalType: instance.ExternalType,
+		Status:       instance.Status,
+	}); err != nil {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeUnknownError,
+			Msg:  server.ResponseMsgUnknownError,
+		}, nil
+	}
+
+	return &server.CommonResponse{Data: true}, nil
+}
+
+func (c *userController) Delete(value []byte) (any, error) {
+	instance := new(model.User)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+	if _, err := database.DB.Delete(instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+	return &server.CommonResponse{Data: true}, nil
+}
+
+func (c *userController) Instance(value []byte) (any, error) {
+	instance := new(model.User)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+	if has, err := database.DB.Get(instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	} else if !has {
+		return &server.CommonResponse{}, nil
+	}
+	return &server.CommonResponse{Data: instance}, nil
+}
+
+func (c *userController) List(value []byte) (any, error) {
+	instance := new(model.User)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+	paginate := new(server.Paginate)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+	if paginate.Limit <= 0 {
+		paginate.Limit = 10
+	}
+
+	session := database.DB.NewSession().Limit(paginate.Limit, paginate.Offset)
+
+	condition := &model.User{
+		Id:           instance.Id,
+		ExternalId:   instance.ExternalId,
+		ExternalType: instance.ExternalType,
+		Status:       instance.Status,
+	}
+	if instance.Username != "" {
+		session.Where("username like ?", "%"+instance.Username+"%")
+		instance.Username = ""
+	}
+	if instance.RealName != "" {
+		session.Where("real_name like ?", "%"+instance.RealName+"%")
+		instance.RealName = ""
+	}
+
+	var list []*model.User
+	total, err := session.FindAndCount(&list, condition)
+	if err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeDatabase,
+			Msg:  server.ResponseMsgDatabase + err.Error(),
+		}, nil
+	}
+	return &server.CommonResponse{
+		Data: &server.Paginate{
+			Total:  total,
+			Offset: paginate.Offset,
+			Limit:  paginate.Limit,
+			Items:  list,
+		},
+	}, nil
+}
+
 func generateJwtToken(userId int64, tenantId string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	sid := util.GenerateXid()

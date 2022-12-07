@@ -20,6 +20,15 @@ func Dispatch(code string, headers map[string]string, value []byte) ([]byte, err
 		return wrapCall(value, UserController.Login)
 	case constant.InjectCodeUserAdd:
 		return wrapCall(value, UserController.Add)
+	case constant.InjectCodeUserUpdate:
+		return wrapCall(value, UserController.Update)
+	case constant.InjectCodeUserDelete:
+		return wrapCall(value, UserController.Delete)
+	case constant.InjectCodeUserInstance:
+		return wrapCall(value, UserController.Instance)
+	case constant.InjectCodeUserList:
+		return wrapCall(value, UserController.List)
+
 	}
 	return nil, nil
 }
