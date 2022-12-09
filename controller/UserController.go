@@ -30,7 +30,7 @@ func (c *userController) GetUserRoleIds(value []byte) (any, error) {
 	}
 	// 获取用户对应的权限和角色
 	var roles []*model.Role
-	err := database.DB.Cols("id").Where("id in (select role_id from t_user_role where user_id=?)", uid).Find(&roles)
+	err := database.DB.Where("id in (select role_id from t_user_role where user_id=?)", uid).Find(&roles)
 	if err != nil {
 		logger.Errorln(err)
 		return nil, err
@@ -38,7 +38,11 @@ func (c *userController) GetUserRoleIds(value []byte) (any, error) {
 	var roleIds []string
 
 	for _, role := range roles {
-		roleIds = append(roleIds, strconv.FormatInt(role.Id, 10))
+		if role.RoleType == 99 {
+			roleIds = append(roleIds, shared.SuperAdmin)
+		} else {
+			roleIds = append(roleIds, strconv.FormatInt(role.Id, 10))
+		}
 	}
 	return &shared.AuthorizationInfo{
 		RoleIds: roleIds,
@@ -75,7 +79,7 @@ func (c *userController) Add(value []byte) (interface{}, error) {
 
 	duplicated, success, err := service.UserService.Add(instance)
 	if err != nil {
-		logger.Error(err)
+		logger.Errorln(err)
 		return &server.CommonResponse{
 			Code: server.ResponseCodeDatabase,
 			Msg:  server.ResponseMsgDatabase + err.Error(),
@@ -144,7 +148,7 @@ func (c *userController) Login(value []byte) (any, error) {
 		}, nil
 	}
 
-	jwtToken, err := generateJwtToken(user.Id, "")
+	jwtToken, err := generateJwtToken(strconv.FormatInt(user.Id, 10), "")
 	if err != nil {
 		return &server.CommonResponse{
 			Code: server.ResponseCodeGeneration,
@@ -290,7 +294,7 @@ func (c *userController) List(value []byte) (any, error) {
 	}, nil
 }
 
-func generateJwtToken(userId int64, tenantId string) (string, error) {
+func generateJwtToken(userId, tenantId string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	sid := util.GenerateXid()
 
@@ -308,7 +312,7 @@ func generateJwtToken(userId int64, tenantId string) (string, error) {
 
 	t, err := token.SignedString([]byte(shared.JwtSecret))
 	if err != nil {
-		logger.Error(err)
+		logger.Errorln(err)
 		return "", err
 	}
 	return t, nil
