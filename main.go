@@ -1,8 +1,7 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"errors"
 
 	logger "github.com/sirupsen/logrus"
 	"github.com/yockii/ruomu-core/config"
@@ -10,6 +9,7 @@ import (
 	"github.com/yockii/ruomu-core/shared"
 	"github.com/yockii/ruomu-core/util"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"github.com/yockii/ruomu-uc/constant"
 	"github.com/yockii/ruomu-uc/controller"
@@ -25,7 +25,7 @@ func (UC) Initial(params map[string]string) error {
 
 	database.Initial()
 
-	database.DB.Sync2(
+	database.DB.AutoMigrate(
 		model.User{},
 		model.Role{},
 		model.UserExtend{},
@@ -38,40 +38,46 @@ func (UC) Initial(params map[string]string) error {
 		Username: "admin",
 	}
 	{
-		if exists, err := database.DB.Get(adminUser); err != nil {
-			logger.Errorln(err)
-		} else if !exists {
-			adminUser.Id = util.SnowflakeId()
-			adminUser.RealName = "管理员"
-			adminUser.Status = 1
-			pwd, _ := bcrypt.GenerateFromPassword([]byte("Admin123!@#"), bcrypt.DefaultCost)
-			adminUser.Password = string(pwd)
-			_, _ = database.DB.Insert(adminUser)
+		if err := database.DB.First(adminUser).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				adminUser.ID = util.SnowflakeId()
+				adminUser.RealName = "管理员"
+				adminUser.Status = 1
+				pwd, _ := bcrypt.GenerateFromPassword([]byte("Admin123!@#"), bcrypt.DefaultCost)
+				adminUser.Password = string(pwd)
+				_ = database.DB.Create(adminUser)
+			} else {
+				logger.Errorln(err)
+			}
 		}
 	}
 
 	// 初始化一个超级管理员角色
 	superAdminRole := &model.Role{
-		RoleType: 99,
+		RoleType: -1,
 	}
 	{
-		if exists, err := database.DB.Get(superAdminRole); err != nil {
-			logger.Errorln(err)
-		} else if !exists {
-			superAdminRole.Id = util.SnowflakeId()
-			superAdminRole.RoleName = "超级管理员"
-			_, _ = database.DB.Insert(superAdminRole)
+		if err := database.DB.First(superAdminRole).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				superAdminRole.ID = util.SnowflakeId()
+				superAdminRole.RoleName = "超级管理员"
+				_ = database.DB.Create(superAdminRole)
+			} else {
+				logger.Errorln(err)
+			}
 		}
 	}
 
 	// 关联admin和超级管理员角色
 	{
-		relation := &model.UserRole{UserId: adminUser.Id, RoleId: superAdminRole.Id}
-		if exists, err := database.DB.Get(relation); err != nil {
-			logger.Errorln(err)
-		} else if !exists {
-			relation.Id = util.SnowflakeId()
-			_, _ = database.DB.Insert(relation)
+		relation := &model.UserRole{UserID: adminUser.ID, RoleID: superAdminRole.ID}
+		if err := database.DB.Take(relation).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				relation.ID = util.SnowflakeId()
+				_ = database.DB.Create(relation)
+			} else {
+				logger.Errorln(err)
+			}
 		}
 	}
 
@@ -84,48 +90,12 @@ func (UC) InjectCall(code string, headers map[string]string, value []byte) ([]by
 
 func init() {
 	config.Set("moduleName", constant.ModuleName)
-	config.Set("logger.level", "debug")
+	config.Set("logger.level", "info")
 	config.InitialLogger()
 	util.InitNode(1)
-}
-
-func main2() {
-	s := `{
-    "id": "1600871296881659904",
-    "realName": "1111",
-    "status": 2
-}`
-	u := new(model.User)
-	err := json.Unmarshal([]byte(s), u)
-	fmt.Println(err, u)
 }
 
 func main() {
 	defer database.Close()
 	shared.ModuleServe(constant.ModuleName, &UC{})
-}
-
-func main0() {
-	database.Initial()
-	defer database.Close()
-
-	database.DB.Sync2(
-		model.User{},
-		model.Role{},
-		model.UserExtend{},
-		model.UserRole{},
-		model.Resource{},
-	)
-
-	//r, err := controller.UserController.Login([]byte("{\"username\":\"admin\",\"password\":\"Admin123!@#\"}"))
-	r, err := controller.UserController.Update([]byte(`{
-		"id": 1600714423612215296,
-		"realName": "1111",
-		"status": 2
-	}`))
-	if err != nil {
-		logger.Errorln(err)
-	} else {
-		logger.Debugln(r)
-	}
 }

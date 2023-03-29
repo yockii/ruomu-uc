@@ -2,16 +2,15 @@ package model
 
 import (
 	"github.com/tidwall/gjson"
-	"github.com/yockii/ruomu-core/database"
 )
 
 type Resource struct {
-	Id           int64             `json:"id,omitempty" xorm:"pk"`
-	ResourceName string            `json:"resourceName,omitempty" xorm:"comment('资源名称')"` // 资源名称
-	ResourceCode string            `json:"resourceCode,omitempty" xorm:"comment('资源代码')"` // 资源认证代码
-	HttpMethod   string            `json:"httpMethod,omitempty" xorm:"comment('http方法')"` // http方法
-	CreateTime   database.DateTime `json:"createTime" xorm:"created"`
-	UpdateTime   database.DateTime `json:"updateTime" xorm:"updated"`
+	ID           uint64 `json:"id,omitempty,string" gorm:"primaryKey"`
+	ResourceName string `json:"resourceName,omitempty" gorm:"comment:'资源名称'"` // 资源名称
+	ResourceCode string `json:"resourceCode,omitempty" gorm:"comment:'资源代码'"` // 资源认证代码
+	HttpMethod   string `json:"httpMethod,omitempty" gorm:"comment:'http方法'"` // http方法
+	CreateTime   int64  `json:"createTime" gorm:"autoCreateTime"`
+	UpdateTime   int64  `json:"updateTime" gorm:"autoUpdateTime"`
 }
 
 func (_ Resource) TableComment() string {
@@ -19,7 +18,7 @@ func (_ Resource) TableComment() string {
 }
 func (r *Resource) UnmarshalJSON(b []byte) error {
 	j := gjson.ParseBytes(b)
-	r.Id = j.Get("id").Int()
+	r.ID = j.Get("id").Uint()
 	r.ResourceName = j.Get("resourceName").String()
 	r.ResourceCode = j.Get("resourceCode").String()
 	r.HttpMethod = j.Get("httpMethod").String()
@@ -27,10 +26,10 @@ func (r *Resource) UnmarshalJSON(b []byte) error {
 }
 
 type RoleResource struct {
-	Id         int64             `json:"id,omitempty" xorm:"pk"`
-	RoleId     int64             `json:"roleId,omitempty"`
-	ResourceId int64             `json:"resourceId,omitempty"`
-	CreateTime database.DateTime `json:"createTime" xorm:"created"`
+	ID         uint64 `json:"id,omitempty,string" gorm:"primaryKey"`
+	RoleID     uint64 `json:"roleId,omitempty,string"`
+	ResourceID uint64 `json:"resourceId,omitempty,string"`
+	CreateTime int64  `json:"createTime" gorm:"autoCreateTime"`
 }
 
 func (_ RoleResource) TableComment() string {
@@ -38,8 +37,8 @@ func (_ RoleResource) TableComment() string {
 }
 func (rr *RoleResource) UnmarshalJSON(b []byte) error {
 	j := gjson.ParseBytes(b)
-	rr.Id = j.Get("id").Int()
-	rr.RoleId = j.Get("roleId").Int()
-	rr.ResourceId = j.Get("resourceId").Int()
+	rr.ID = j.Get("id").Uint()
+	rr.RoleID = j.Get("roleId").Uint()
+	rr.ResourceID = j.Get("resourceId").Uint()
 	return nil
 }

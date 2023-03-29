@@ -2,16 +2,15 @@ package model
 
 import (
 	"github.com/tidwall/gjson"
-	"github.com/yockii/ruomu-core/database"
 )
 
 type Role struct {
-	Id         int64             `json:"id,omitempty" xorm:"pk"`
-	RoleName   string            `json:"roleName,omitempty" xorm:"comment('角色名称')"`
-	RoleDesc   string            `json:"roleDesc,omitempty" xorm:"comment('角色描述')"`
-	RoleType   int               `json:"roleType,omitempty" xorm:"comment('角色类型 1-普通角色 99-超级管理员角色')"`
-	CreateTime database.DateTime `json:"createTime" xorm:"created"`
-	UpdateTime database.DateTime `json:"updateTime" xorm:"updated"`
+	ID         uint64 `json:"id,omitempty,string" gorm:"primaryKey"`
+	RoleName   string `json:"roleName,omitempty" gorm:"comment:'角色名称'"`
+	RoleDesc   string `json:"roleDesc,omitempty" gorm:"comment:'角色描述'"`
+	RoleType   int    `json:"roleType,omitempty" gorm:"comment:'角色类型 1-普通角色 -1-超级管理员角色'"`
+	CreateTime int64  `json:"createTime" gorm:"autoCreateTime"`
+	UpdateTime int64  `json:"updateTime" gorm:"autoUpdateTime"`
 }
 
 func (_ Role) TableComment() string {
@@ -19,7 +18,7 @@ func (_ Role) TableComment() string {
 }
 func (r *Role) UnmarshalJSON(b []byte) error {
 	j := gjson.ParseBytes(b)
-	r.Id = j.Get("id").Int()
+	r.ID = j.Get("id").Uint()
 	r.RoleName = j.Get("roleName").String()
 	r.RoleDesc = j.Get("roleDesc").String()
 	r.RoleType = int(j.Get("roleType").Int())
@@ -27,10 +26,10 @@ func (r *Role) UnmarshalJSON(b []byte) error {
 }
 
 type UserRole struct {
-	Id         int64             `json:"id,omitempty" xorm:"pk"`
-	UserId     int64             `json:"userId,omitempty"`
-	RoleId     int64             `json:"roleId,omitempty"`
-	CreateTime database.DateTime `json:"createTime" xorm:"created"`
+	ID         uint64 `json:"id,omitempty,string" gorm:"primaryKey"`
+	UserID     uint64 `json:"userId,omitempty,string"`
+	RoleID     uint64 `json:"roleId,omitempty,string"`
+	CreateTime int64  `json:"createTime" gorm:"autoCreateTime"`
 }
 
 func (_ UserRole) TableComment() string {
@@ -38,8 +37,8 @@ func (_ UserRole) TableComment() string {
 }
 func (ur *UserRole) UnmarshalJSON(b []byte) error {
 	j := gjson.ParseBytes(b)
-	ur.Id = j.Get("id").Int()
-	ur.UserId = j.Get("userId").Int()
-	ur.RoleId = j.Get("roleId").Int()
+	ur.ID = j.Get("id").Uint()
+	ur.UserID = j.Get("userId").Uint()
+	ur.RoleID = j.Get("roleId").Uint()
 	return nil
 }

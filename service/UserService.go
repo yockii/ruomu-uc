@@ -23,7 +23,7 @@ func (s *userService) Add(instance *model.User) (duplicated bool, success bool, 
 		return
 	}
 	var c int64
-	c, err = database.DB.Count(&model.User{Username: instance.Username, ExternalType: instance.ExternalType})
+	err = database.DB.Model(&model.User{}).Where(&model.User{Username: instance.Username, ExternalType: instance.ExternalType}).Count(&c).Error
 	if err != nil {
 		logger.Errorln(err)
 		return
@@ -33,13 +33,13 @@ func (s *userService) Add(instance *model.User) (duplicated bool, success bool, 
 		return
 	}
 
-	instance.Id = util.SnowflakeId()
+	instance.ID = util.SnowflakeId()
 	if instance.Password != "" {
 		pwd, _ := bcrypt.GenerateFromPassword([]byte(instance.Password), bcrypt.DefaultCost)
 		instance.Password = string(pwd)
 	}
 	instance.Status = 1
-	_, err = database.DB.Insert(instance)
+	err = database.DB.Create(instance).Error
 	if err != nil {
 		logger.Errorln(err)
 		return
@@ -55,39 +55,37 @@ func (s *userService) PaginateBetweenTimes(condition *model.User, limit int, off
 	if condition.Password != "" {
 		condition.Password = ""
 	}
-	session := database.DB.NewSession()
+	tx := database.DB.Limit(100)
 	if limit > -1 {
-		if offset > -1 {
-			session.Limit(limit, offset)
-		} else {
-			session.Limit(limit)
-		}
+		tx.Limit(limit)
+	}
+	if offset > -1 {
+		tx.Offset(offset)
 	}
 
 	if orderBy != "" {
-		session.OrderBy(orderBy)
+		tx.Order(orderBy)
 	}
-	session.Desc("create_time")
 
 	// 处理时间字段，在某段时间之间
 	for tc, tr := range tcList {
 		if tc != "" {
 			if !tr.Start.IsZero() && !tr.End.IsZero() {
-				session.Where(tc+" between ? and ?", time.Time(tr.Start), time.Time(tr.End))
+				tx.Where(tc+" between ? and ?", time.Time(tr.Start), time.Time(tr.End))
 			} else if tr.Start.IsZero() && !tr.End.IsZero() {
-				session.Where(tc+" <= ?", time.Time(tr.End))
+				tx.Where(tc+" <= ?", time.Time(tr.End))
 			} else if !tr.Start.IsZero() && tr.End.IsZero() {
-				session.Where(tc+" > ?", time.Time(tr.Start))
+				tx.Where(tc+" > ?", time.Time(tr.Start))
 			}
 		}
 	}
 
 	// 模糊查找
 	if condition.Username != "" {
-		session.Where("username like ?", condition.Username+"%")
+		tx.Where("username like ?", condition.Username+"%")
 		condition.Username = ""
 	}
-	total, err = session.Omit("password").FindAndCount(&list, condition)
+	err = tx.Omit("password").Find(&list, condition).Limit(-1).Offset(-1).Count(&total).Error
 	if err != nil {
 		return 0, nil, err
 	}

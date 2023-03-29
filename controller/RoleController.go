@@ -24,7 +24,7 @@ func (c *roleController) GetRoleResourceCodes(value []byte) (any, error) {
 	}
 	// 获取用户对应的权限和角色
 	var resources []*model.Resource
-	err := database.DB.Cols("id").Where("id in (select resource_id from t_role_resource where role_id=?)", roleId).Find(&resources)
+	err := database.DB.Select("id").Where("id in (select resource_id from t_role_resource where role_id=?)", roleId).Find(&resources).Error
 	if err != nil {
 		logger.Errorln(err)
 		return nil, err
@@ -56,21 +56,23 @@ func (_ *roleController) Add(value []byte) (any, error) {
 		}, nil
 	}
 
-	if c, err := database.DB.Count(&model.Role{RoleName: instance.RoleName}); err != nil {
+	var c int64
+	if err := database.DB.Model(&model.Role{}).Where(&model.Role{RoleName: instance.RoleName}).Count(&c).Error; err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{
 			Code: server.ResponseCodeDatabase,
 			Msg:  server.ResponseMsgDatabase + err.Error(),
 		}, nil
-	} else if c > 0 {
+	}
+	if c > 0 {
 		return &server.CommonResponse{
 			Code: server.ResponseCodeDuplicated,
 			Msg:  server.ResponseMsgDuplicated,
 		}, nil
 	}
 
-	instance.Id = util.SnowflakeId()
-	if _, err := database.DB.Insert(instance); err != nil {
+	instance.ID = util.SnowflakeId()
+	if err := database.DB.Create(instance).Error; err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{
 			Code: server.ResponseCodeDatabase,
@@ -92,17 +94,17 @@ func (_ *roleController) Update(value []byte) (any, error) {
 		}, nil
 	}
 	// 处理必填
-	if instance.Id == 0 {
+	if instance.ID == 0 {
 		return &server.CommonResponse{
 			Code: server.ResponseCodeParamNotEnough,
 			Msg:  server.ResponseMsgParamNotEnough + " id",
 		}, nil
 	}
 
-	if _, err := database.DB.Update(&model.Role{
+	if err := database.DB.Model(&model.Role{ID: instance.ID}).Updates(&model.Role{
 		RoleName: instance.RoleName,
 		RoleDesc: instance.RoleDesc,
-	}, &model.Role{Id: instance.Id}); err != nil {
+	}).Error; err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{
 			Code: server.ResponseCodeDatabase,
@@ -124,14 +126,14 @@ func (_ *roleController) Delete(value []byte) (any, error) {
 		}, nil
 	}
 	// 处理必填
-	if instance.Id == 0 {
+	if instance.ID == 0 {
 		return &server.CommonResponse{
 			Code: server.ResponseCodeParamNotEnough,
 			Msg:  server.ResponseMsgParamNotEnough + " id",
 		}, nil
 	}
 
-	if _, err := database.DB.Delete(instance); err != nil {
+	if err := database.DB.Where(instance).Delete(instance).Error; err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{
 			Code: server.ResponseCodeDatabase,
@@ -164,18 +166,18 @@ func (_ *roleController) List(value []byte) (any, error) {
 		paginate.Limit = 10
 	}
 
-	session := database.DB.NewSession().Limit(paginate.Limit, paginate.Offset)
+	tx := database.DB.Limit(paginate.Limit).Offset(paginate.Offset)
 
 	condition := &model.Role{
-		Id: instance.Id,
+		ID: instance.ID,
 	}
 	if instance.RoleName != "" {
-		session.Where("role_name like ?", "%"+instance.RoleName+"%")
+		tx.Where("role_name like ?", "%"+instance.RoleName+"%")
 		instance.RoleName = ""
 	}
-
+	var total int64
 	var list []*model.Role
-	total, err := session.FindAndCount(&list, condition)
+	err := tx.Find(&list, condition).Offset(-1).Count(&total).Error
 	if err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{

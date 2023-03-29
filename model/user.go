@@ -2,27 +2,26 @@ package model
 
 import (
 	"github.com/tidwall/gjson"
-	"github.com/yockii/ruomu-core/database"
 )
 
 type User struct {
-	Id           int64             `json:"id,omitempty" xorm:"pk"`
-	Username     string            `json:"username,omitempty" xorm:"varchar(30) index comment('用户名')"`
-	Password     string            `json:"password,omitempty" xorm:"comment('密码')"`
-	RealName     string            `json:"realName,omitempty" xorm:"comment('真实姓名')"`
-	ExternalId   string            `json:"externalId,omitempty" xorm:"varchar(50) index comment('外部关联ID')"`
-	ExternalType string            `json:"externalType,omitempty" xorm:"comment('关联类型')"`
-	Status       int               `json:"status,omitempty" xorm:"comment('状态 1-正常')"`
-	CreateTime   database.DateTime `json:"createTime" xorm:"created"`
-	UpdateTime   database.DateTime `json:"updateTime" xorm:"updated"`
+	ID           uint64 `json:"id,omitempty,string" gorm:"primaryKey"`
+	Username     string `json:"username,omitempty" gorm:"size:30;index;comment:'用户名'"`
+	Password     string `json:"password,omitempty" gorm:"comment:'密码'"`
+	RealName     string `json:"realName,omitempty" gorm:"comment:'真实姓名'"`
+	ExternalId   string `json:"externalId,omitempty" gorm:"size:50;index;comment:'外部关联ID'"`
+	ExternalType string `json:"externalType,omitempty" gorm:"comment:'关联类型'"`
+	Status       int    `json:"status,omitempty" gorm:"comment:'状态 1-正常'"`
+	CreateTime   int64  `json:"createTime" gorm:"autoCreateTime"`
+	UpdateTime   int64  `json:"updateTime" gorm:"autoUpdateTime"`
 }
 
-func (_ User) TableComment() string {
+func (_ *User) TableComment() string {
 	return "用户表"
 }
 func (u *User) UnmarshalJSON(b []byte) error {
 	j := gjson.ParseBytes(b)
-	u.Id = j.Get("id").Int()
+	u.ID = j.Get("id").Uint()
 	u.Username = j.Get("username").String()
 	u.Password = j.Get("password").String()
 	u.RealName = j.Get("realName").String()
@@ -34,8 +33,8 @@ func (u *User) UnmarshalJSON(b []byte) error {
 }
 
 type UserExtend struct {
-	UserId       int64  `json:"userId" xorm:"pk"`
-	ExternalInfo string `json:"externalInfo,omitempty" xorm:"text"`
+	UserID       uint64 `json:"userId,string" gorm:"primaryKey"`
+	ExternalInfo string `json:"externalInfo,omitempty" gorm:"type:text"`
 }
 
 func (_ UserExtend) TableComment() string {
@@ -44,7 +43,7 @@ func (_ UserExtend) TableComment() string {
 
 func (ue *UserExtend) UnmarshalJSON(b []byte) error {
 	j := gjson.ParseBytes(b)
-	ue.UserId = j.Get("userId").Int()
+	ue.UserID = j.Get("userId").Uint()
 	ue.ExternalInfo = j.Get("externalInfo").String()
 	return nil
 }

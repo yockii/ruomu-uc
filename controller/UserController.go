@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -14,6 +15,7 @@ import (
 	"github.com/yockii/ruomu-core/shared"
 	"github.com/yockii/ruomu-core/util"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"github.com/yockii/ruomu-uc/model"
 	"github.com/yockii/ruomu-uc/service"
@@ -30,7 +32,7 @@ func (c *userController) GetUserRoleIds(value []byte) (any, error) {
 	}
 	// 获取用户对应的权限和角色
 	var roles []*model.Role
-	err := database.DB.Where("id in (select role_id from t_user_role where user_id=?)", uid).Find(&roles)
+	err := database.DB.Where("id in (select role_id from t_user_role where user_id=?)", uid).Find(&roles).Error
 	if err != nil {
 		logger.Errorln(err)
 		return nil, err
@@ -41,7 +43,7 @@ func (c *userController) GetUserRoleIds(value []byte) (any, error) {
 		if role.RoleType == 99 {
 			roleIds = append(roleIds, shared.SuperAdmin)
 		} else {
-			roleIds = append(roleIds, strconv.FormatInt(role.Id, 10))
+			roleIds = append(roleIds, strconv.FormatUint(role.ID, 10))
 		}
 	}
 	return &shared.AuthorizationInfo{
@@ -127,17 +129,19 @@ func (c *userController) Login(value []byte) (any, error) {
 	}
 
 	user := &model.User{Username: instance.Username}
-	if has, err := database.DB.Get(user); err != nil {
-		logger.Errorln(err)
-		return &server.CommonResponse{
-			Code: server.ResponseCodeDatabase,
-			Msg:  server.ResponseMsgDatabase + err.Error(),
-		}, nil
-	} else if !has {
-		return &server.CommonResponse{
-			Code: server.ResponseCodeDataNotExists,
-			Msg:  server.ResponseMsgDataNotExists,
-		}, nil
+	if err := database.DB.Take(user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDataNotExists,
+				Msg:  server.ResponseMsgDataNotExists,
+			}, nil
+		} else {
+			logger.Errorln(err)
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDatabase,
+				Msg:  server.ResponseMsgDatabase + err.Error(),
+			}, nil
+		}
 	}
 
 	// 校验密码
@@ -148,7 +152,7 @@ func (c *userController) Login(value []byte) (any, error) {
 		}, nil
 	}
 
-	jwtToken, err := generateJwtToken(strconv.FormatInt(user.Id, 10), "")
+	jwtToken, err := generateJwtToken(strconv.FormatUint(user.ID, 10), "")
 	if err != nil {
 		return &server.CommonResponse{
 			Code: server.ResponseCodeGeneration,
@@ -175,19 +179,19 @@ func (c *userController) Update(value []byte) (any, error) {
 	}
 
 	// 处理必填
-	if instance.Id == 0 {
+	if instance.ID == 0 {
 		return &server.CommonResponse{
 			Code: server.ResponseCodeParamNotEnough,
 			Msg:  server.ResponseMsgParamNotEnough + " id",
 		}, nil
 	}
 
-	if _, err := database.DB.ID(instance.Id).Update(&model.User{
+	if err := database.DB.Model(&model.User{ID: instance.ID}).Updates(&model.User{
 		RealName:     instance.RealName,
 		ExternalId:   instance.ExternalId,
 		ExternalType: instance.ExternalType,
 		Status:       instance.Status,
-	}); err != nil {
+	}).Error; err != nil {
 		return &server.CommonResponse{
 			Code: server.ResponseCodeUnknownError,
 			Msg:  server.ResponseMsgUnknownError,
@@ -206,11 +210,11 @@ func (c *userController) Delete(value []byte) (any, error) {
 			Msg:  server.ResponseMsgParamParseError,
 		}, nil
 	}
-	if _, err := database.DB.Delete(instance); err != nil {
+	if err := database.DB.Where(instance).Delete(instance).Error; err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{
-			Code: server.ResponseCodeParamParseError,
-			Msg:  server.ResponseMsgParamParseError,
+			Code: server.ResponseCodeDatabase,
+			Msg:  server.ResponseMsgDatabase + err.Error(),
 		}, nil
 	}
 	return &server.CommonResponse{Data: true}, nil
@@ -225,14 +229,15 @@ func (c *userController) Instance(value []byte) (any, error) {
 			Msg:  server.ResponseMsgParamParseError,
 		}, nil
 	}
-	if has, err := database.DB.Get(instance); err != nil {
+	if err := database.DB.Omit("password").Where(instance).Take(instance).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &server.CommonResponse{}, nil
+		}
 		logger.Errorln(err)
 		return &server.CommonResponse{
 			Code: server.ResponseCodeParamParseError,
 			Msg:  server.ResponseMsgParamParseError,
 		}, nil
-	} else if !has {
-		return &server.CommonResponse{}, nil
 	}
 	return &server.CommonResponse{Data: instance}, nil
 }
@@ -247,7 +252,7 @@ func (c *userController) List(value []byte) (any, error) {
 		}, nil
 	}
 	paginate := new(server.Paginate)
-	if err := json.Unmarshal(value, instance); err != nil {
+	if err := json.Unmarshal(value, paginate); err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{
 			Code: server.ResponseCodeParamParseError,
@@ -258,25 +263,26 @@ func (c *userController) List(value []byte) (any, error) {
 		paginate.Limit = 10
 	}
 
-	session := database.DB.NewSession().Limit(paginate.Limit, paginate.Offset)
+	tx := database.DB.Limit(paginate.Limit).Offset(paginate.Offset)
 
 	condition := &model.User{
-		Id:           instance.Id,
+		ID:           instance.ID,
 		ExternalId:   instance.ExternalId,
 		ExternalType: instance.ExternalType,
 		Status:       instance.Status,
 	}
 	if instance.Username != "" {
-		session.Where("username like ?", "%"+instance.Username+"%")
+		tx.Where("username like ?", "%"+instance.Username+"%")
 		instance.Username = ""
 	}
 	if instance.RealName != "" {
-		session.Where("real_name like ?", "%"+instance.RealName+"%")
+		tx.Where("real_name like ?", "%"+instance.RealName+"%")
 		instance.RealName = ""
 	}
 
 	var list []*model.User
-	total, err := session.FindAndCount(&list, condition)
+	var total int64
+	err := tx.Omit("password").Find(&list, condition).Offset(-1).Count(&total).Error
 	if err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{
@@ -317,50 +323,3 @@ func generateJwtToken(userId, tenantId string) (string, error) {
 	}
 	return t, nil
 }
-
-//
-//func (_ *userController) Paginate(ctx *fiber.Ctx) error {
-//	type UserCondition struct {
-//		model.User
-//		CreateTimeRange *server.TimeCondition `json:"createTimeRange"`
-//	}
-//	pr := new(UserCondition)
-//	if err := ctx.QueryParser(pr); err != nil {
-//		logger.Error(err)
-//		return ctx.JSON(&server.CommonResponse{
-//			Code: server.ResponseCodeParamParseError,
-//			Msg:  server.ResponseMsgParamParseError,
-//		})
-//	}
-//	limit, offset, orderBy, err := server.ParsePaginationInfoFromQuery(ctx)
-//	if err != nil {
-//		logger.Error(err)
-//		return ctx.JSON(&server.CommonResponse{
-//			Code: server.ResponseCodeParamParseError,
-//			Msg:  server.ResponseMsgParamParseError,
-//		})
-//	}
-//
-//	timeRangeMap := make(map[string]*server.TimeCondition)
-//	if pr.CreateTimeRange != nil {
-//		timeRangeMap["update_time"] = &server.TimeCondition{
-//			Start: pr.CreateTimeRange.Start,
-//			End:   pr.CreateTimeRange.End,
-//		}
-//	}
-//
-//	total, list, err0 := service.UserService.PaginateBetweenTimes(&pr.User, limit, offset, orderBy, timeRangeMap)
-//	if err0 != nil {
-//		logger.Error(err0)
-//		return ctx.JSON(&server.CommonResponse{
-//			Code: server.ResponseCodeDatabase,
-//			Msg:  server.ResponseMsgDatabase,
-//		})
-//	}
-//	return ctx.JSON(&server.CommonResponse{Data: &server.Paginate{
-//		Total:  total,
-//		Offset: offset,
-//		Limit:  limit,
-//		Items:  list,
-//	}})
-//}
