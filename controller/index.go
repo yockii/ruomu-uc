@@ -31,6 +31,8 @@ func Dispatch(code string, headers map[string][]string, value []byte) ([]byte, e
 		return wrapCall(headers, value, UserController.List)
 	case constant.InjectCodeUserPassword:
 		return wrapCall(headers, value, UserController.UpdatePassword)
+	case constant.InjectCodeUserDispatchRoles:
+		return wrapCall(headers, value, UserController.DispatchRolesToUser)
 	//// 角色
 	case constant.InjectCodeRoleAdd:
 		return wrapCall(headers, value, RoleController.Add)

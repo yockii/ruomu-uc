@@ -24,7 +24,8 @@ func (c *roleController) GetRoleResourceCodes(_ map[string][]string, value []byt
 	}
 	// 获取用户对应的权限和角色
 	var resources []*model.Resource
-	err := database.DB.Select("id").Where("id in (select resource_id from t_role_resource where role_id=?)", roleId).Find(&resources).Error
+	subSql := database.DB.Model(&model.RoleResource{}).Select("resource_id").Where("role_id=?", roleId)
+	err := database.DB.Select("id").Where("id in (?)", subSql).Find(&resources).Error
 	if err != nil {
 		logger.Errorln(err)
 		return nil, err
