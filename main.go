@@ -26,11 +26,12 @@ func (UC) Initial(params map[string]string) error {
 	database.Initial()
 
 	_ = database.AutoMigrate(
-		model.User{},
-		model.Role{},
-		model.UserExtend{},
-		model.UserRole{},
-		model.Resource{},
+		&model.User{},
+		&model.Role{},
+		&model.UserExtend{},
+		&model.UserRole{},
+		&model.Resource{},
+		&model.RoleResource{},
 	)
 
 	// 初始化一个admin用户
@@ -92,7 +93,7 @@ func init() {
 	config.Set("moduleName", constant.ModuleName)
 	config.Set("logger.level", "info")
 	config.InitialLogger()
-	util.InitNode(1)
+	_ = util.InitNode(1)
 }
 
 func main() {

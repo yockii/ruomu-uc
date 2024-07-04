@@ -386,52 +386,65 @@ func (c *userController) DispatchRolesToUser(_ map[string][]string, value []byte
 			Msg:  server.ResponseMsgParamNotEnough + " userId",
 		}, nil
 	}
-	// 获取用户原来的roleId列表
-	var oldRoleIdList []uint64
-	if err := database.DB.Model(&model.UserRole{}).Where("user_id=?", instance.UserID).Pluck("role_id", &oldRoleIdList).Error; err != nil {
-		logger.Errorln(err)
-		return &server.CommonResponse{
-			Code: server.ResponseCodeDatabase,
-			Msg:  server.ResponseMsgDatabase,
-		}, nil
-	}
-	// 找到要删除的和要添加的roleId
-	var toDelete []uint64
-	var toAdd []uint64
-	for _, roleId := range instance.RoleIds {
-		if !containsUint64(oldRoleIdList, roleId) {
-			toAdd = append(toAdd, roleId)
+
+	if len(instance.RoleIds) == 0 {
+		// 直接删除所有
+		if err := database.DB.Where("user_id=?", instance.UserID).Delete(&model.UserRole{}).Error; err != nil {
+			logger.Errorln(err)
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDatabase,
+				Msg:  server.ResponseMsgDatabase,
+			}, nil
 		}
-	}
-	for _, roleId := range oldRoleIdList {
-		if !containsUint64(instance.RoleIds, roleId) {
-			toDelete = append(toDelete, roleId)
+	} else {
+
+		// 获取用户原来的roleId列表
+		var oldRoleIdList []uint64
+		if err := database.DB.Model(&model.UserRole{}).Where("user_id=?", instance.UserID).Pluck("role_id", &oldRoleIdList).Error; err != nil {
+			logger.Errorln(err)
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDatabase,
+				Msg:  server.ResponseMsgDatabase,
+			}, nil
 		}
-	}
-	// 执行数据库操作
-	err := database.DB.Transaction(func(tx *gorm.DB) error {
-		for _, roleId := range toDelete {
-			if err := tx.Where("user_id=? and role_id=?", instance.UserID, roleId).Delete(&model.UserRole{}).Error; err != nil {
-				return err
+		// 找到要删除的和要添加的roleId
+		var toDelete []uint64
+		var toAdd []uint64
+		for _, roleId := range instance.RoleIds {
+			if !containsUint64(oldRoleIdList, roleId) {
+				toAdd = append(toAdd, roleId)
 			}
 		}
-		for _, roleId := range toAdd {
-			if err := tx.Create(&model.UserRole{
-				ID:     util.SnowflakeId(),
-				UserID: instance.UserID,
-				RoleID: roleId,
-			}).Error; err != nil {
-				return err
+		for _, roleId := range oldRoleIdList {
+			if !containsUint64(instance.RoleIds, roleId) {
+				toDelete = append(toDelete, roleId)
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		logger.Errorln(err)
-		return &server.CommonResponse{
-			Code: server.ResponseCodeDatabase,
-			Msg:  server.ResponseMsgDatabase,
-		}, nil
+		// 执行数据库操作
+		err := database.DB.Transaction(func(tx *gorm.DB) error {
+			for _, roleId := range toDelete {
+				if err := tx.Where("user_id=? and role_id=?", instance.UserID, roleId).Delete(&model.UserRole{}).Error; err != nil {
+					return err
+				}
+			}
+			for _, roleId := range toAdd {
+				if err := tx.Create(&model.UserRole{
+					ID:     util.SnowflakeId(),
+					UserID: instance.UserID,
+					RoleID: roleId,
+				}).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			logger.Errorln(err)
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDatabase,
+				Msg:  server.ResponseMsgDatabase,
+			}, nil
+		}
 	}
 	// 清除缓存
 	conn := cache.Get()
@@ -442,7 +455,7 @@ func (c *userController) DispatchRolesToUser(_ map[string][]string, value []byte
 		}
 	}(conn)
 	// 删除用户ID对应的角色ID缓存
-	_, err = conn.Do("DEL", shared.RedisKeyUserRoles+strconv.FormatUint(instance.UserID, 10))
+	_, err := conn.Do("DEL", shared.RedisKeyUserRoles+strconv.FormatUint(instance.UserID, 10))
 	if err != nil {
 		logger.Errorln(err)
 		return &server.CommonResponse{

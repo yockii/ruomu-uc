@@ -44,7 +44,8 @@ func Dispatch(code string, headers map[string][]string, value []byte) ([]byte, e
 		return wrapCall(headers, value, RoleController.Instance)
 	case constant.InjectCodeRoleList:
 		return wrapCall(headers, value, RoleController.List)
-
+	case constant.InjectCodeRoleDispatchResources:
+		return wrapCall(headers, value, RoleController.DispatchResourcesToRole)
 	}
 	return nil, nil
 }

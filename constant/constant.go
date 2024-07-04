@@ -12,9 +12,10 @@ const (
 	InjectCodeUserPassword      = "/user/password"
 	InjectCodeUserDispatchRoles = "/user/dispatchRoles"
 
-	InjectCodeRoleAdd      = "/role/add"
-	InjectCodeRoleUpdate   = "/role/update"
-	InjectCodeRoleDelete   = "/role/delete"
-	InjectCodeRoleInstance = "/role/instance"
-	InjectCodeRoleList     = "/role/list"
+	InjectCodeRoleAdd               = "/role/add"
+	InjectCodeRoleUpdate            = "/role/update"
+	InjectCodeRoleDelete            = "/role/delete"
+	InjectCodeRoleInstance          = "/role/instance"
+	InjectCodeRoleList              = "/role/list"
+	InjectCodeRoleDispatchResources = "/role/dispatchResources"
 )

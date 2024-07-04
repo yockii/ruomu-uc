@@ -2,6 +2,11 @@ package controller
 
 import (
 	"encoding/json"
+	"github.com/gomodule/redigo/redis"
+	"github.com/yockii/ruomu-core/cache"
+	"github.com/yockii/ruomu-uc/domain"
+	"gorm.io/gorm"
+	"strconv"
 
 	logger "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -25,14 +30,14 @@ func (c *roleController) GetRoleResourceCodes(_ map[string][]string, value []byt
 	// 获取用户对应的权限和角色
 	var resources []*model.Resource
 	subSql := database.DB.Model(&model.RoleResource{}).Select("resource_id").Where("role_id=?", roleId)
-	err := database.DB.Select("id").Where("id in (?)", subSql).Find(&resources).Error
+	err := database.DB.Select("id, resource_code").Where("id in (?)", subSql).Find(&resources).Error
 	if err != nil {
 		logger.Errorln(err)
 		return nil, err
 	}
 	var resourceCodes []string
-	for _, role := range resources {
-		resourceCodes = append(resourceCodes, role.ResourceCode)
+	for _, resource := range resources {
+		resourceCodes = append(resourceCodes, resource.ResourceCode)
 	}
 	return &shared.AuthorizationInfo{
 		ResourceCodes: resourceCodes,
@@ -172,6 +177,104 @@ func (_ *roleController) Instance(_ map[string][]string, value []byte) (any, err
 	return &server.CommonResponse{
 		Data: instance,
 	}, nil
+}
+
+func (_ *roleController) DispatchResourcesToRole(_ map[string][]string, value []byte) (any, error) {
+	instance := new(domain.RoleResources)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+	// 处理必填
+	if instance.RoleID == 0 {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamNotEnough,
+			Msg:  server.ResponseMsgParamNotEnough + " roleId",
+		}, nil
+	}
+	if len(instance.ResourceIDs) == 0 {
+		// 删除所有
+		if err := database.DB.Where(&model.RoleResource{RoleID: instance.RoleID}).Delete(&model.RoleResource{}).Error; err != nil {
+			logger.Errorln(err)
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDatabase,
+				Msg:  server.ResponseMsgDatabase + err.Error(),
+			}, nil
+		}
+	} else {
+		var oldResourceIds []uint64
+		if err := database.DB.Model(&model.RoleResource{}).Where("role_id=?", instance.RoleID).Pluck("resource_id", &oldResourceIds).Error; err != nil {
+			logger.Errorln(err)
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDatabase,
+				Msg:  server.ResponseMsgDatabase + err.Error(),
+			}, nil
+		}
+		// 要删除和添加的
+		var toDelete []uint64
+		var toAdd []uint64
+		for _, oldId := range oldResourceIds {
+			if !containsUint64(instance.ResourceIDs, oldId) {
+				toDelete = append(toDelete, oldId)
+			}
+		}
+		for _, newId := range instance.ResourceIDs {
+			if !containsUint64(oldResourceIds, newId) {
+				toAdd = append(toAdd, newId)
+			}
+		}
+		// 执行数据库操作
+		err := database.DB.Transaction(func(tx *gorm.DB) error {
+			if len(toDelete) > 0 {
+				if err := tx.Where("role_id=? and resource_id in (?)", instance.RoleID, toDelete).Delete(&model.RoleResource{}).Error; err != nil {
+					return err
+				}
+			}
+			if len(toAdd) > 0 {
+				var roleResources []model.RoleResource
+				for _, id := range toAdd {
+					roleResources = append(roleResources, model.RoleResource{
+						ID:         util.SnowflakeId(),
+						RoleID:     instance.RoleID,
+						ResourceID: id,
+					})
+				}
+				if err := tx.Create(&roleResources).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			logger.Errorln(err)
+			return &server.CommonResponse{
+				Code: server.ResponseCodeDatabase,
+				Msg:  server.ResponseMsgDatabase + err.Error(),
+			}, nil
+		}
+	}
+
+	// 清除缓存
+	conn := cache.Get()
+	defer func(conn redis.Conn) {
+		err := conn.Close()
+		if err != nil {
+			logger.Errorln(err)
+		}
+	}(conn)
+	_, err := conn.Do("DEL", shared.RedisKeyRoleResourceCode+strconv.FormatUint(instance.RoleID, 10))
+	if err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeDatabase,
+			Msg:  server.ResponseMsgDatabase,
+		}, nil
+	}
+
+	return &server.CommonResponse{Data: true}, nil
 }
 
 func (_ *roleController) List(_ map[string][]string, value []byte) (any, error) {
