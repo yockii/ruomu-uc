@@ -8,7 +8,7 @@ import (
 	"github.com/yockii/ruomu-uc/constant"
 )
 
-func Dispatch(code string, headers map[string]string, value []byte) ([]byte, error) {
+func Dispatch(code string, headers map[string][]string, value []byte) ([]byte, error) {
 	switch code {
 	// 代码注入点
 	case shared.InjectCodeAuthorizationInfoByUserId:

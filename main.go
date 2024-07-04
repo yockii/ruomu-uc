@@ -25,7 +25,7 @@ func (UC) Initial(params map[string]string) error {
 
 	database.Initial()
 
-	database.DB.AutoMigrate(
+	_ = database.AutoMigrate(
 		model.User{},
 		model.Role{},
 		model.UserExtend{},
@@ -84,7 +84,7 @@ func (UC) Initial(params map[string]string) error {
 	return nil
 }
 
-func (UC) InjectCall(code string, headers map[string]string, value []byte) ([]byte, error) {
+func (UC) InjectCall(code string, headers map[string][]string, value []byte) ([]byte, error) {
 	return controller.Dispatch(code, headers, value)
 }
 
