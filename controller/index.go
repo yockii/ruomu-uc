@@ -12,29 +12,30 @@ func Dispatch(code string, headers map[string][]string, value []byte) ([]byte, e
 	switch code {
 	// 代码注入点
 	case shared.InjectCodeAuthorizationInfoByUserId:
-		return wrapCall(value, UserController.GetUserRoleIds)
+		return wrapCall(headers, value, UserController.GetUserRoleIds)
 	case shared.InjectCodeAuthorizationInfoByRoleId:
-		return wrapCall(value, RoleController.GetRoleResourceCodes)
+		return wrapCall(headers, value, RoleController.GetRoleResourceCodes)
 	// HTTP 注入点
 	case constant.InjectCodeUserLogin:
-		return wrapCall(value, UserController.Login)
+		return wrapCall(headers, value, UserController.Login)
 	case constant.InjectCodeUserAdd:
-		return wrapCall(value, UserController.Add)
+		return wrapCall(headers, value, UserController.Add)
 	case constant.InjectCodeUserUpdate:
-		return wrapCall(value, UserController.Update)
+		return wrapCall(headers, value, UserController.Update)
 	case constant.InjectCodeUserDelete:
-		return wrapCall(value, UserController.Delete)
+		return wrapCall(headers, value, UserController.Delete)
 	case constant.InjectCodeUserInstance:
-		return wrapCall(value, UserController.Instance)
+		return wrapCall(headers, value, UserController.Instance)
 	case constant.InjectCodeUserList:
-		return wrapCall(value, UserController.List)
-
+		return wrapCall(headers, value, UserController.List)
+	case constant.InjectCodeUserPassword:
+		return wrapCall(headers, value, UserController.UpdatePassword)
 	}
 	return nil, nil
 }
 
-func wrapCall(v []byte, f func([]byte) (any, error)) ([]byte, error) {
-	r, err := f(v)
+func wrapCall(h map[string][]string, v []byte, f func(map[string][]string, []byte) (any, error)) ([]byte, error) {
+	r, err := f(h, v)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/gomodule/redigo/redis"
+	"github.com/yockii/ruomu-uc/domain"
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -25,7 +27,7 @@ var UserController = new(userController)
 
 type userController struct{}
 
-func (c *userController) GetUserRoleIds(value []byte) (any, error) {
+func (c *userController) GetUserRoleIds(header map[string][]string, value []byte) (any, error) {
 	uid := gjson.GetBytes(value, "userId").Int()
 	if uid == 0 {
 		return nil, nil
@@ -51,7 +53,7 @@ func (c *userController) GetUserRoleIds(value []byte) (any, error) {
 	}, nil
 }
 
-func (c *userController) Add(value []byte) (interface{}, error) {
+func (c *userController) Add(header map[string][]string, value []byte) (interface{}, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -104,7 +106,7 @@ func (c *userController) Add(value []byte) (interface{}, error) {
 	}, nil
 }
 
-func (c *userController) Login(value []byte) (any, error) {
+func (c *userController) Login(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -168,7 +170,7 @@ func (c *userController) Login(value []byte) (any, error) {
 	}, nil
 }
 
-func (c *userController) Update(value []byte) (any, error) {
+func (c *userController) Update(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -201,7 +203,7 @@ func (c *userController) Update(value []byte) (any, error) {
 	return &server.CommonResponse{Data: true}, nil
 }
 
-func (c *userController) Delete(value []byte) (any, error) {
+func (c *userController) Delete(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -220,7 +222,7 @@ func (c *userController) Delete(value []byte) (any, error) {
 	return &server.CommonResponse{Data: true}, nil
 }
 
-func (c *userController) Instance(value []byte) (any, error) {
+func (c *userController) Instance(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -242,7 +244,7 @@ func (c *userController) Instance(value []byte) (any, error) {
 	return &server.CommonResponse{Data: instance}, nil
 }
 
-func (c *userController) List(value []byte) (any, error) {
+func (c *userController) List(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -300,12 +302,82 @@ func (c *userController) List(value []byte) (any, error) {
 	}, nil
 }
 
+func (c *userController) UpdatePassword(header map[string][]string, value []byte) (any, error) {
+	instance := new(domain.UpdateUserPasswordRequest)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+
+	// 处理必填
+	uidStr, has := header[shared.JwtClaimUserId]
+	if !has || uidStr[0] == "" {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamNotEnough,
+			Msg:  server.ResponseMsgParamNotEnough + " userId",
+		}, nil
+	}
+	if instance.NewPassword == "" || instance.OldPassword == "" {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamNotEnough,
+			Msg:  server.ResponseMsgParamNotEnough + " oldPassword / newPassword",
+		}, nil
+	}
+	uid, _ := strconv.ParseUint(uidStr[0], 10, 64)
+	if uid == 0 {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+
+	userInstance := new(model.User)
+	if err := database.DB.Model(&model.User{}).Where(&model.User{ID: uid}).First(userInstance).Error; err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeDatabase,
+			Msg:  server.ResponseMsgDatabase,
+		}, nil
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(userInstance.Password), []byte(instance.OldPassword)); err != nil {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeDataNotMatch,
+			Msg:  server.ResponseMsgDataNotMatch,
+		}, nil
+	}
+	encryptedPwd, err := bcrypt.GenerateFromPassword([]byte(instance.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeGeneration,
+			Msg:  server.ResponseMsgGeneration,
+		}, nil
+	}
+	if err = database.DB.Model(&model.User{ID: uid}).Update("password", string(encryptedPwd)).Error; err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeDatabase,
+			Msg:  server.ResponseMsgDatabase,
+		}, nil
+	}
+
+	return &server.CommonResponse{Data: true}, nil
+}
+
 func generateJwtToken(userId, tenantId string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	sid := util.GenerateXid()
 
 	conn := cache.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		err := conn.Close()
+		if err != nil {
+			logger.Errorln(err)
+		}
+	}(conn)
 	_, err := conn.Do("SETEX", shared.RedisSessionIdKey+sid, config.GetInt("userTokenExpire"), userId)
 	if err != nil {
 		logger.Errorln(err)

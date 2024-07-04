@@ -13,7 +13,7 @@ type Role struct {
 	UpdateTime int64  `json:"updateTime" gorm:"autoUpdateTime"`
 }
 
-func (_ Role) TableComment() string {
+func (_ *Role) TableComment() string {
 	return "角色表"
 }
 func (r *Role) UnmarshalJSON(b []byte) error {
@@ -32,7 +32,7 @@ type UserRole struct {
 	CreateTime int64  `json:"createTime" gorm:"autoCreateTime"`
 }
 
-func (_ UserRole) TableComment() string {
+func (_ *UserRole) TableComment() string {
 	return "用户角色表"
 }
 func (ur *UserRole) UnmarshalJSON(b []byte) error {

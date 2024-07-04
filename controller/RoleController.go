@@ -17,7 +17,7 @@ var RoleController = new(roleController)
 
 type roleController struct{}
 
-func (c *roleController) GetRoleResourceCodes(value []byte) (any, error) {
+func (c *roleController) GetRoleResourceCodes(header map[string][]string, value []byte) (any, error) {
 	roleId := gjson.GetBytes(value, "roleId").Int()
 	if roleId == 0 {
 		return nil, nil
@@ -38,7 +38,7 @@ func (c *roleController) GetRoleResourceCodes(value []byte) (any, error) {
 	}, nil
 }
 
-func (_ *roleController) Add(value []byte) (any, error) {
+func (_ *roleController) Add(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -84,7 +84,7 @@ func (_ *roleController) Add(value []byte) (any, error) {
 	}, nil
 }
 
-func (_ *roleController) Update(value []byte) (any, error) {
+func (_ *roleController) Update(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -116,7 +116,7 @@ func (_ *roleController) Update(value []byte) (any, error) {
 	}, nil
 }
 
-func (_ *roleController) Delete(value []byte) (any, error) {
+func (_ *roleController) Delete(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -145,7 +145,7 @@ func (_ *roleController) Delete(value []byte) (any, error) {
 	}, nil
 }
 
-func (_ *roleController) List(value []byte) (any, error) {
+func (_ *roleController) List(header map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)

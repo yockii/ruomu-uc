@@ -37,7 +37,7 @@ type UserExtend struct {
 	ExternalInfo string `json:"externalInfo,omitempty" gorm:"type:text"`
 }
 
-func (_ UserExtend) TableComment() string {
+func (_ *UserExtend) TableComment() string {
 	return "用户扩展表"
 }
 
