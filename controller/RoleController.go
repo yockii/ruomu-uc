@@ -17,7 +17,7 @@ var RoleController = new(roleController)
 
 type roleController struct{}
 
-func (c *roleController) GetRoleResourceCodes(header map[string][]string, value []byte) (any, error) {
+func (c *roleController) GetRoleResourceCodes(_ map[string][]string, value []byte) (any, error) {
 	roleId := gjson.GetBytes(value, "roleId").Int()
 	if roleId == 0 {
 		return nil, nil
@@ -38,7 +38,7 @@ func (c *roleController) GetRoleResourceCodes(header map[string][]string, value 
 	}, nil
 }
 
-func (_ *roleController) Add(header map[string][]string, value []byte) (any, error) {
+func (_ *roleController) Add(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -84,7 +84,7 @@ func (_ *roleController) Add(header map[string][]string, value []byte) (any, err
 	}, nil
 }
 
-func (_ *roleController) Update(header map[string][]string, value []byte) (any, error) {
+func (_ *roleController) Update(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -116,7 +116,7 @@ func (_ *roleController) Update(header map[string][]string, value []byte) (any, 
 	}, nil
 }
 
-func (_ *roleController) Delete(header map[string][]string, value []byte) (any, error) {
+func (_ *roleController) Delete(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -145,7 +145,35 @@ func (_ *roleController) Delete(header map[string][]string, value []byte) (any, 
 	}, nil
 }
 
-func (_ *roleController) List(header map[string][]string, value []byte) (any, error) {
+func (_ *roleController) Instance(_ map[string][]string, value []byte) (any, error) {
+	instance := new(model.Role)
+	if err := json.Unmarshal(value, instance); err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamParseError,
+			Msg:  server.ResponseMsgParamParseError,
+		}, nil
+	}
+	// 处理必填
+	if instance.ID == 0 {
+		return &server.CommonResponse{
+			Code: server.ResponseCodeParamNotEnough,
+			Msg:  server.ResponseMsgParamNotEnough + " id",
+		}, nil
+	}
+	if err := database.DB.Where(instance).First(instance).Error; err != nil {
+		logger.Errorln(err)
+		return &server.CommonResponse{
+			Code: server.ResponseCodeDatabase,
+			Msg:  server.ResponseMsgDatabase + err.Error(),
+		}, nil
+	}
+	return &server.CommonResponse{
+		Data: instance,
+	}, nil
+}
+
+func (_ *roleController) List(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.Role)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)

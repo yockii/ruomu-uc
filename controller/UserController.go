@@ -27,7 +27,7 @@ var UserController = new(userController)
 
 type userController struct{}
 
-func (c *userController) GetUserRoleIds(header map[string][]string, value []byte) (any, error) {
+func (c *userController) GetUserRoleIds(_ map[string][]string, value []byte) (any, error) {
 	uid := gjson.GetBytes(value, "userId").Int()
 	if uid == 0 {
 		return nil, nil
@@ -53,7 +53,7 @@ func (c *userController) GetUserRoleIds(header map[string][]string, value []byte
 	}, nil
 }
 
-func (c *userController) Add(header map[string][]string, value []byte) (interface{}, error) {
+func (c *userController) Add(_ map[string][]string, value []byte) (interface{}, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -106,7 +106,7 @@ func (c *userController) Add(header map[string][]string, value []byte) (interfac
 	}, nil
 }
 
-func (c *userController) Login(header map[string][]string, value []byte) (any, error) {
+func (c *userController) Login(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -170,7 +170,7 @@ func (c *userController) Login(header map[string][]string, value []byte) (any, e
 	}, nil
 }
 
-func (c *userController) Update(header map[string][]string, value []byte) (any, error) {
+func (c *userController) Update(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -203,7 +203,7 @@ func (c *userController) Update(header map[string][]string, value []byte) (any, 
 	return &server.CommonResponse{Data: true}, nil
 }
 
-func (c *userController) Delete(header map[string][]string, value []byte) (any, error) {
+func (c *userController) Delete(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -222,7 +222,7 @@ func (c *userController) Delete(header map[string][]string, value []byte) (any, 
 	return &server.CommonResponse{Data: true}, nil
 }
 
-func (c *userController) Instance(header map[string][]string, value []byte) (any, error) {
+func (c *userController) Instance(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)
@@ -244,7 +244,7 @@ func (c *userController) Instance(header map[string][]string, value []byte) (any
 	return &server.CommonResponse{Data: instance}, nil
 }
 
-func (c *userController) List(header map[string][]string, value []byte) (any, error) {
+func (c *userController) List(_ map[string][]string, value []byte) (any, error) {
 	instance := new(model.User)
 	if err := json.Unmarshal(value, instance); err != nil {
 		logger.Errorln(err)

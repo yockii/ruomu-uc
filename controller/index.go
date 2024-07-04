@@ -16,6 +16,7 @@ func Dispatch(code string, headers map[string][]string, value []byte) ([]byte, e
 	case shared.InjectCodeAuthorizationInfoByRoleId:
 		return wrapCall(headers, value, RoleController.GetRoleResourceCodes)
 	// HTTP 注入点
+	//// 用户
 	case constant.InjectCodeUserLogin:
 		return wrapCall(headers, value, UserController.Login)
 	case constant.InjectCodeUserAdd:
@@ -30,6 +31,18 @@ func Dispatch(code string, headers map[string][]string, value []byte) ([]byte, e
 		return wrapCall(headers, value, UserController.List)
 	case constant.InjectCodeUserPassword:
 		return wrapCall(headers, value, UserController.UpdatePassword)
+	//// 角色
+	case constant.InjectCodeRoleAdd:
+		return wrapCall(headers, value, RoleController.Add)
+	case constant.InjectCodeRoleUpdate:
+		return wrapCall(headers, value, RoleController.Update)
+	case constant.InjectCodeRoleDelete:
+		return wrapCall(headers, value, RoleController.Delete)
+	case constant.InjectCodeRoleInstance:
+		return wrapCall(headers, value, RoleController.Instance)
+	case constant.InjectCodeRoleList:
+		return wrapCall(headers, value, RoleController.List)
+
 	}
 	return nil, nil
 }
