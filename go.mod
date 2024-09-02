@@ -1,18 +1,15 @@
 module github.com/yockii/ruomu-uc
 
-go 1.22
-
-toolchain go1.22.5
-
-replace github.com/yockii/ruomu-core => D:\projects\github.com\yockii\ruomu-core
+go 1.23
 
 require (
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/gomodule/redigo v1.9.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/tidwall/gjson v1.17.1
+	github.com/tidwall/gjson v1.17.3
 	github.com/yockii/ruomu-core v0.1.0
-	golang.org/x/crypto v0.24.0
-	gorm.io/gorm v1.25.10
+	golang.org/x/crypto v0.26.0
+	gorm.io/gorm v1.25.11
 )
 
 require (
@@ -25,7 +22,6 @@ require (
 	github.com/gofiber/template/html/v2 v2.1.1 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-plugin v1.6.1 // indirect
@@ -68,9 +64,9 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect

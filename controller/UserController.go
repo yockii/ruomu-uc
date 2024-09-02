@@ -7,7 +7,7 @@ import (
 	"github.com/yockii/ruomu-uc/domain"
 	"strconv"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	logger "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/yockii/ruomu-core/cache"
