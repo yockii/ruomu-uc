@@ -39,19 +39,19 @@ POST /module/add
             "name": "获取用户角色ID列表",
             "type": 51,
             "injectCode": "authorizationInfoByUserId",
-            "authorizationCode": "inner",
+            "authorizationCode": "inner"
         },
         {
             "name": "获取角色资源列表",
             "type": 51,
             "injectCode": "authorizationInfoByRoleId",
-            "authorizationCode": "inner",
+            "authorizationCode": "inner"
         },
         {
             "name": "登录",
             "type": 2,
             "injectCode": "/user/login",
-            "authorizationCode": "anno"
+            "authorizationCode": "anon"
         },
         {
             "name": "新增用户",

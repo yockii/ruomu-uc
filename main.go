@@ -16,9 +16,7 @@ import (
 	"github.com/yockii/ruomu-uc/model"
 )
 
-type UC struct {
-	shared.UnimplementedCommunicateServer
-}
+type UC struct{}
 
 func (UC) Initial(params map[string]string) error {
 	for key, value := range params {

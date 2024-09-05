@@ -1,13 +1,13 @@
 module github.com/yockii/ruomu-uc
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gomodule/redigo v1.9.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tidwall/gjson v1.17.3
-	github.com/yockii/ruomu-core v0.1.1
+	github.com/yockii/ruomu-core v0.1.2
 	golang.org/x/crypto v0.26.0
 	gorm.io/gorm v1.25.11
 )
