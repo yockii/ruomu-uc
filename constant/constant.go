@@ -1,6 +1,7 @@
 package constant
 
-const ModuleName = "uc"
+const ModuleCode = "uc"
+const ModuleName = "用户中心"
 
 const (
 	InjectCodeUserLogin         = "/user/login"

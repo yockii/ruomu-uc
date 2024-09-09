@@ -2,11 +2,13 @@ package main
 
 import (
 	"errors"
+	"github.com/yockii/ruomu-core/shared"
+	moduleModel "github.com/yockii/ruomu-module/model"
+	"os"
 
 	logger "github.com/sirupsen/logrus"
 	"github.com/yockii/ruomu-core/config"
 	"github.com/yockii/ruomu-core/database"
-	"github.com/yockii/ruomu-core/shared"
 	"github.com/yockii/ruomu-core/util"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -90,7 +92,7 @@ func (UC) InjectCall(code string, headers map[string][]string, value []byte) ([]
 }
 
 func init() {
-	config.Set("moduleName", constant.ModuleName)
+	config.Set("moduleName", constant.ModuleCode)
 	config.Set("logger.level", "info")
 	config.InitialLogger()
 	_ = util.InitNode(1)
@@ -98,5 +100,151 @@ func init() {
 
 func main() {
 	defer database.Close()
-	shared.ModuleServe(constant.ModuleName, &UC{})
+
+	// 检查是否有启动参数 --mc
+	args := os.Args
+	runningInMicroCore := false
+	for _, arg := range args {
+		if arg == "--mc" {
+			runningInMicroCore = true
+			break
+		}
+	}
+	if runningInMicroCore {
+		shared.ModuleServe(constant.ModuleCode, &UC{})
+	} else {
+		registerModule()
+		logger.Info("UC模块注册完成")
+	}
+}
+
+func registerModule() {
+	UC{}.Initial(map[string]string{})
+
+	// 直接写表数据即可
+	m := &moduleModel.Module{
+		Code: constant.ModuleCode,
+	}
+	database.DB.Where(&moduleModel.Module{
+		Code: constant.ModuleCode,
+	}).Attrs(&moduleModel.Module{
+		ID:     util.SnowflakeId(),
+		Name:   constant.ModuleName,
+		Code:   constant.ModuleCode,
+		Cmd:    "./plugins/ruomu-uc --mc",
+		Status: 1,
+	}).FirstOrCreate(m)
+
+	// 注入信息
+	{
+		mjiList := []*moduleModel.ModuleInjectInfo{
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "获取用户角色ID列表",
+				Type:              51,
+				InjectCode:        "authorizationInfoByUserId",
+				AuthorizationCode: "inner",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "获取角色资源列表",
+				Type:              51,
+				InjectCode:        "authorizationInfoByRoleId",
+				AuthorizationCode: "inner",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "用户登录",
+				Type:              2,
+				InjectCode:        constant.InjectCodeUserLogin,
+				AuthorizationCode: "anon",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "新增用户",
+				Type:              2,
+				InjectCode:        constant.InjectCodeUserAdd,
+				AuthorizationCode: "user:add",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "修改用户",
+				Type:              3,
+				InjectCode:        constant.InjectCodeUserDelete,
+				AuthorizationCode: "user:update",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "删除用户",
+				Type:              4,
+				InjectCode:        constant.InjectCodeUserDelete,
+				AuthorizationCode: "user:delete",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "获取用户列表",
+				Type:              1,
+				InjectCode:        constant.InjectCodeUserList,
+				AuthorizationCode: "user:list",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "获取用户信息",
+				Type:              1,
+				InjectCode:        constant.InjectCodeUserInstance,
+				AuthorizationCode: "user:instance",
+			},
+			{
+				ID:                util.SnowflakeId(),
+				ModuleID:          m.ID,
+				Name:              "修改用户密码",
+				Type:              3,
+				InjectCode:        constant.InjectCodeUserPassword,
+				AuthorizationCode: "user:password",
+			},
+		}
+		for _, mji := range mjiList {
+			temp := new(moduleModel.ModuleInjectInfo)
+			database.DB.Where(&moduleModel.ModuleInjectInfo{
+				ModuleID:   mji.ModuleID,
+				InjectCode: mji.InjectCode,
+			}).Attrs(mji).FirstOrCreate(temp)
+		}
+	}
+
+	// 设置信息
+	{
+		for k, v := range config.GetStringMapString("database") {
+			s := &moduleModel.ModuleSettings{
+				ID:       util.SnowflakeId(),
+				ModuleID: m.ID,
+				Code:     "database." + k,
+				Value:    v,
+			}
+			t := new(moduleModel.ModuleSettings)
+			database.DB.Where(&moduleModel.ModuleSettings{
+				ModuleID: m.ID,
+				Code:     s.Code,
+			}).Attrs(s).FirstOrCreate(t)
+		}
+		s := &moduleModel.ModuleSettings{
+			ID:       util.SnowflakeId(),
+			ModuleID: m.ID,
+			Code:     "userTokenExpire",
+			Value:    config.GetString("userTokenExpire"),
+		}
+		t := new(moduleModel.ModuleSettings)
+		database.DB.Where(&moduleModel.ModuleSettings{
+			ModuleID: m.ID,
+			Code:     "userTokenExpire",
+		}).Attrs(s).FirstOrCreate(t)
+	}
 }

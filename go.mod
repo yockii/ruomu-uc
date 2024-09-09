@@ -8,6 +8,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tidwall/gjson v1.17.3
 	github.com/yockii/ruomu-core v0.1.2
+	github.com/yockii/ruomu-module v0.1.5
 	golang.org/x/crypto v0.26.0
 	gorm.io/gorm v1.25.11
 )
@@ -23,7 +24,7 @@ require (
 	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-hclog v1.5.0 // indirect
+	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-plugin v1.6.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
