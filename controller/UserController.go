@@ -45,7 +45,7 @@ func (c *userController) GetUserRoleIds(_ map[string][]string, value []byte) (an
 	var roleIds []string
 
 	for _, role := range roles {
-		if role.RoleType == 99 {
+		if role.RoleType == -1 {
 			roleIds = append(roleIds, shared.SuperAdmin)
 		} else {
 			roleIds = append(roleIds, strconv.FormatUint(role.ID, 10))
