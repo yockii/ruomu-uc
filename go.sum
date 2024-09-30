@@ -137,8 +137,11 @@ github.com/valyala/tcplisten v1.0.0 h1:rBHj/Xf+E1tRGZyWIWwJDiRY0zc1Js+CV5DqwacVS
 github.com/valyala/tcplisten v1.0.0/go.mod h1:T0xQ8SeCZGxckz9qRXTfG43PvQ/mcWh7FwZEA7Ioqkc=
 github.com/yockii/ruomu-core v0.1.2 h1:nVddXSNMjc/3AsMsXCeQiDkZKF5JNJtQTxZZenWN3cU=
 github.com/yockii/ruomu-core v0.1.2/go.mod h1:TL776NIrpayk6bda7HhAcZA04IfdZVF32U9RXmyt2Iw=
+github.com/yockii/ruomu-core v0.1.5/go.mod h1:TL776NIrpayk6bda7HhAcZA04IfdZVF32U9RXmyt2Iw=
 github.com/yockii/ruomu-module v0.1.5 h1:0a9+wELxs8bbb8yq0Is7QA9dBnVRQCsOisKAOW0Xa2Y=
 github.com/yockii/ruomu-module v0.1.5/go.mod h1:03ZhxmnBiav1jYbAczBhiF/IQLubayniOgGkTBjB/8A=
+github.com/yockii/ruomu-module v0.1.6/go.mod h1:03ZhxmnBiav1jYbAczBhiF/IQLubayniOgGkTBjB/8A=
+github.com/yockii/ruomu-module v0.1.7/go.mod h1:03ZhxmnBiav1jYbAczBhiF/IQLubayniOgGkTBjB/8A=
 github.com/yockii/snowflake_ext v0.1.0 h1:OGd10s8xeUuNf7e2QvnS2+zqyzo5n9dLkVft5Qn8jT0=
 github.com/yockii/snowflake_ext v0.1.0/go.mod h1:QKkFgINVDidfwYv3F5gAA+K4dfbOtcnzeHessrV5boc=
 go.uber.org/atomic v1.9.0 h1:ECmE8Bn/WFTYwEW/bpKD3M8VtR/zQVbavAoalC1PYyE=
@@ -190,3 +193,4 @@ gorm.io/driver/sqlite v1.5.6/go.mod h1:U+J8craQU6Fzkcvu8oLeAQmi50TkwPEhHDEjQZXDa
 gorm.io/gorm v1.25.7/go.mod h1:hbnx/Oo0ChWMn1BIhpy1oYozzpM15i4YPuHDmfYtwg8=
 gorm.io/gorm v1.25.11 h1:/Wfyg1B/je1hnDx3sMkX+gAlxrlZpn6X0BXRlwXlvHg=
 gorm.io/gorm v1.25.11/go.mod h1:xh7N7RHfYlNc5EmcI/El95gXusucDrQnHXe0+CgWcLQ=
+gorm.io/gorm v1.25.12/go.mod h1:xh7N7RHfYlNc5EmcI/El95gXusucDrQnHXe0+CgWcLQ=
