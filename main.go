@@ -5,6 +5,7 @@ import (
 	"github.com/yockii/ruomu-core/shared"
 	moduleModel "github.com/yockii/ruomu-module/model"
 	"os"
+	"runtime"
 
 	logger "github.com/sirupsen/logrus"
 	"github.com/yockii/ruomu-core/config"
@@ -125,13 +126,19 @@ func registerModule() {
 	m := &moduleModel.Module{
 		Code: constant.ModuleCode,
 	}
+
+	cmd := "./plugins/ruomu-uc --mc"
+	if runtime.GOOS == "windows" {
+		cmd = "./plugins/ruomu-uc.exe --mc"
+	}
+
 	database.DB.Where(&moduleModel.Module{
 		Code: constant.ModuleCode,
 	}).Attrs(&moduleModel.Module{
 		ID:     util.SnowflakeId(),
 		Name:   constant.ModuleName,
 		Code:   constant.ModuleCode,
-		Cmd:    "./plugins/ruomu-uc --mc",
+		Cmd:    cmd,
 		Status: 1,
 	}).FirstOrCreate(m)
 
